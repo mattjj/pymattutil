@@ -5,6 +5,7 @@ na = np.newaxis
 import scipy.stats as stats
 import scipy.special as special
 import scipy.linalg
+import scipy.weave
 from numpy.core.umath_tests import inner1d
 
 import general
@@ -84,6 +85,28 @@ def sample_discrete_from_log(p_log,axis=0,dtype=np.int):
             np.reshape(cumvals[[slice(None) if i is not axis else -1
                 for i in range(p_log.ndim)]],thesize)
     return np.sum(randvals > cumvals,axis=axis,dtype=dtype)
+
+def sample_discrete_from_log_2d_destructive(scores,dtype=np.int):
+    # NOTE: destructive means it alters the input array!
+    M,N = scores.shape
+    out = np.empty(M,dtype=np.int)
+    scipy.weave.inline(
+            '''
+            using namespace Eigen;
+            using namespace std;
+            for (int i=0; i<M; i++) {
+                Map<ArrayXd> vals(scores + i*N,N);
+                vals = vals.exp();
+                double tot = vals.sum() * ((float) rand()) / RAND_MAX;
+                int j;
+                for (j=0; (tot -= vals(j)) > 0; j++) ;
+                out[i] = j;
+            }
+            ''',
+            ['scores','M','N','out'],
+            headers=['<Eigen/Core>','<math.h>'],include_dirs=['../deps/Eigen3/'],
+            extra_compile_args=['-O3','-DNDEBUG'])
+    return out
 
 def sample_niw(mu,lmbda,kappa,nu):
     '''
