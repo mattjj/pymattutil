@@ -15,7 +15,7 @@ import general
 
 def getdatasize(data):
     if isinstance(data,np.ma.masked_array):
-        return data.shape[0] - data.mask.sum()
+        return data.shape[0] - data.mask.reshape((data.shape[0],-1))[:,0].sum()
     elif isinstance(data,np.ndarray):
         return data.shape[0]
     elif isinstance(data,list):
