@@ -14,11 +14,14 @@ import general
 ### data abstraction
 
 def getdatasize(data):
-    if isinstance(data,np.ndarray):
+    if isinstance(data,np.ma.masked_array):
+        return data.shape[0] - data.mask.sum()
+    elif isinstance(data,np.ndarray):
         return data.shape[0]
     elif isinstance(data,list):
         return sum(getdatasize(d) for d in data)
     else:
+        # handle unboxed case for convenience
         assert isinstance(data,int) or isinstance(data,float)
         return 1
 
@@ -30,28 +33,31 @@ def getdatadimension(data):
         assert len(data) > 0
         return getdatadimension(data[0])
     else:
+        # handle unboxed case for convenience
         assert isinstance(data,int) or isinstance(data,float)
         return 1
 
 def combinedata(datas):
     ret = []
     for data in datas:
+        if isinstance(data,np.ma.masked_array):
+            ret.append(np.ma.compress_rows(data))
         if isinstance(data,np.ndarray):
             ret.append(data)
         elif isinstance(data,list):
-            ret.extend(data)
+            ret.extend(combinedata(data))
         else:
+            # handle unboxed case for convenience
             assert isinstance(data,int) or isinstance(data,float)
             ret.append(np.atleast_1d(data))
     return ret
 
 def flattendata(data):
-    # data is either an array (possibly a maskedarray) or a list of arrays
     if isinstance(data,np.ndarray):
         return data
     elif isinstance(data,list) or isinstance(data,tuple):
         if any(isinstance(d,np.ma.MaskedArray) for d in data):
-            return np.ma.concatenate(data).compressed()
+            return np.concatenate([np.ma.compress_rows(d) for d in data])
         else:
             return np.concatenate(data)
     else:
