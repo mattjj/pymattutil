@@ -141,6 +141,9 @@ def sample_mniw(dof,lmbda,M,K):
     Sigma = sample_invwishart(lmbda,dof)
     return sample_mn(Sigma,M,K), Sigma
 
+def sample_pareto(x_m,alpha):
+    return x_m + np.random.pareto(alpha)
+
 ### Entropy
 def invwishart_entropy(sigma,nu,chol=None):
     D = sigma.shape[0]
