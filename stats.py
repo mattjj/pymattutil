@@ -13,12 +13,12 @@ import general
 
 ### data abstraction
 
+def mask_data(data):
+    return np.ma.masked_array(np.nan_to_num(data),np.isnan(data),fill_value=0.,hard_mask=True)
+
 def gi(data):
     out = (np.isnan(np.atleast_2d(data)).sum(1) == 0).ravel()
-    if len(out) == 0:
-        return None
-    else:
-        return out
+    return out if len(out) != 0 else None
 
 def getdatasize(data):
     if isinstance(data,np.ma.masked_array):
