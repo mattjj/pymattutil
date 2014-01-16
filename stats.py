@@ -13,11 +13,20 @@ import general
 
 ### data abstraction
 
+def gi(data):
+    out = (np.isnan(np.atleast_2d(data)).sum(1) == 0).ravel()
+    if len(out) == 0:
+        return None
+    else:
+        return out
+
 def getdatasize(data):
     if isinstance(data,np.ma.masked_array):
         return data.shape[0] - data.mask.reshape((data.shape[0],-1))[:,0].sum()
     elif isinstance(data,np.ndarray):
-        return data.shape[0]
+        if len(data) == 0:
+            return 0
+        return data[gi(data)].shape[0]
     elif isinstance(data,list):
         return sum(getdatasize(d) for d in data)
     else:
