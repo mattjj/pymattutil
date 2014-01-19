@@ -13,11 +13,18 @@ import general
 
 ### data abstraction
 
+def atleast_2d(data):
+    # NOTE: can't use np.atleast_2d because if it's 1D we want axis 1 to be the
+    # singleton and axis 0 to be the sequence index
+    if data.ndim == 1:
+        return data.reshape((-1,1))
+    return data
+
 def mask_data(data):
     return np.ma.masked_array(np.nan_to_num(data),np.isnan(data),fill_value=0.,hard_mask=True)
 
 def gi(data):
-    out = (np.isnan(np.atleast_2d(data)).sum(1) == 0).ravel()
+    out = (np.isnan(atleast_2d(data)).sum(1) == 0).ravel()
     return out if len(out) != 0 else None
 
 def getdatasize(data):
