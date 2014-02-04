@@ -86,7 +86,10 @@ def flattendata(data):
 def cov(a):
     # return np.cov(a,rowvar=0,bias=1)
     mu = a.mean(0)
-    return a.T.dot(a)/a.shape[0] - np.outer(mu,mu)
+    if isinstance(a,np.ma.MaskedArray):
+        return np.ma.dot(a.T,a)/a.count(0)[0] - np.ma.outer(mu,mu)
+    else:
+        return a.T.dot(a)/a.shape[0] - np.outer(mu,mu)
 
 ### Sampling functions
 
