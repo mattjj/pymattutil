@@ -93,6 +93,7 @@ def sample_niw(mu,lmbda,kappa,nu):
     '''
     # code is based on Matlab's method
     # reference: p. 87 in Gelman's Bayesian Data Analysis
+    assert nu > lmbda.shape[0] and kappa > 0
 
     # first sample Sigma ~ IW(lmbda,nu)
     lmbda = sample_invwishart(lmbda,nu)
