@@ -13,11 +13,27 @@ import general
 
 ### data abstraction
 
+def atleast_2d(data):
+    # NOTE: can't use np.atleast_2d because if it's 1D we want axis 1 to be the
+    # singleton and axis 0 to be the sequence index
+    if data.ndim == 1:
+        return data.reshape((-1,1))
+    return data
+
+def mask_data(data):
+    return np.ma.masked_array(np.nan_to_num(data),np.isnan(data),fill_value=0.,hard_mask=True)
+
+def gi(data):
+    out = (np.isnan(atleast_2d(data)).sum(1) == 0).ravel()
+    return out if len(out) != 0 else None
+
 def getdatasize(data):
     if isinstance(data,np.ma.masked_array):
         return data.shape[0] - data.mask.reshape((data.shape[0],-1))[:,0].sum()
     elif isinstance(data,np.ndarray):
-        return data.shape[0]
+        if len(data) == 0:
+            return 0
+        return data[gi(data)].shape[0]
     elif isinstance(data,list):
         return sum(getdatasize(d) for d in data)
     else:
@@ -70,7 +86,10 @@ def flattendata(data):
 def cov(a):
     # return np.cov(a,rowvar=0,bias=1)
     mu = a.mean(0)
-    return a.T.dot(a)/a.shape[0] - np.outer(mu,mu)
+    if isinstance(a,np.ma.MaskedArray):
+        return np.ma.dot(a.T,a)/a.count(0)[0] - np.ma.outer(mu,mu)
+    else:
+        return a.T.dot(a)/a.shape[0] - np.outer(mu,mu)
 
 ### Sampling functions
 
