@@ -13,12 +13,31 @@ import general
 
 ### data abstraction
 
+def atleast_2d(data):
+    # NOTE: can't use np.atleast_2d because if it's 1D we want axis 1 to be the
+    # singleton and axis 0 to be the sequence index
+    if data.ndim == 1:
+        return data.reshape((-1,1))
+    return data
+
+def mask_data(data):
+    return np.ma.masked_array(np.nan_to_num(data),np.isnan(data),fill_value=0.,hard_mask=True)
+
+def gi(data):
+    out = (np.isnan(atleast_2d(data)).sum(1) == 0).ravel()
+    return out if len(out) != 0 else None
+
 def getdatasize(data):
-    if isinstance(data,np.ndarray):
-        return data.shape[0]
+    if isinstance(data,np.ma.masked_array):
+        return data.shape[0] - data.mask.reshape((data.shape[0],-1))[:,0].sum()
+    elif isinstance(data,np.ndarray):
+        if len(data) == 0:
+            return 0
+        return data[gi(data)].shape[0]
     elif isinstance(data,list):
         return sum(getdatasize(d) for d in data)
     else:
+        # handle unboxed case for convenience
         assert isinstance(data,int) or isinstance(data,float)
         return 1
 
@@ -30,28 +49,31 @@ def getdatadimension(data):
         assert len(data) > 0
         return getdatadimension(data[0])
     else:
+        # handle unboxed case for convenience
         assert isinstance(data,int) or isinstance(data,float)
         return 1
 
 def combinedata(datas):
     ret = []
     for data in datas:
+        if isinstance(data,np.ma.masked_array):
+            ret.append(np.ma.compress_rows(data))
         if isinstance(data,np.ndarray):
             ret.append(data)
         elif isinstance(data,list):
-            ret.extend(data)
+            ret.extend(combinedata(data))
         else:
+            # handle unboxed case for convenience
             assert isinstance(data,int) or isinstance(data,float)
             ret.append(np.atleast_1d(data))
     return ret
 
 def flattendata(data):
-    # data is either an array (possibly a maskedarray) or a list of arrays
     if isinstance(data,np.ndarray):
         return data
     elif isinstance(data,list) or isinstance(data,tuple):
         if any(isinstance(d,np.ma.MaskedArray) for d in data):
-            return np.ma.concatenate(data).compressed()
+            return np.concatenate([np.ma.compress_rows(d) for d in data])
         else:
             return np.concatenate(data)
     else:
@@ -64,7 +86,10 @@ def flattendata(data):
 def cov(a):
     # return np.cov(a,rowvar=0,bias=1)
     mu = a.mean(0)
-    return a.T.dot(a)/a.shape[0] - np.outer(mu,mu)
+    if isinstance(a,np.ma.MaskedArray):
+        return np.ma.dot(a.T,a)/a.count(0)[0] - np.ma.outer(mu,mu)
+    else:
+        return a.T.dot(a)/a.shape[0] - np.outer(mu,mu)
 
 ### Sampling functions
 
@@ -133,14 +158,27 @@ def sample_wishart(sigma, dof):
 
     return np.dot(X,X.T)
 
-def sample_mn(Sigma,M,K):
-    left = np.linalg.cholesky(Sigma)
-    right = np.linalg.cholesky(K)
-    return M + left.dot(np.random.normal(size=M.shape)).dot(right.T)
+def sample_mn(Sigma,M,K=None,Kinv=None):
+    assert (K is None) ^ (Kinv is None)
+    if K is not None:
+        left = np.linalg.cholesky(Sigma)
+        right = np.linalg.cholesky(K)
+        return M + left.dot(np.random.normal(size=M.shape)).dot(right.T)
+    else:
+        left = np.linalg.cholesky(Sigma)
+        right = np.linalg.cholesky(Kinv)
+        return M + np.linalg.solve(right.T,left.dot(np.random.normal(size=M.shape)).T).T
 
 def sample_mniw(dof,lmbda,M,K):
     Sigma = sample_invwishart(lmbda,dof)
     return sample_mn(Sigma,M,K), Sigma
+
+def sample_mniw_kinv(dof,lmbda,M,Kinv):
+    Sigma = sample_invwishart(lmbda,dof)
+    return sample_mn(Sigma,M,Kinv=Kinv), Sigma
+
+def sample_pareto(x_m,alpha):
+    return x_m + np.random.pareto(alpha)
 
 ### Entropy
 def invwishart_entropy(sigma,nu,chol=None):
