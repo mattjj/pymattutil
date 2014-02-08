@@ -138,14 +138,24 @@ def sample_wishart(sigma, dof):
 
     return np.dot(X,X.T)
 
-def sample_mn(Sigma,M,K):
-    left = np.linalg.cholesky(Sigma)
-    right = np.linalg.cholesky(K)
-    return M + left.dot(np.random.normal(size=M.shape)).dot(right.T)
+def sample_mn(Sigma,M,K=None,Kinv=None):
+    assert (K is None) ^ (Kinv is None)
+    if K is not None:
+        left = np.linalg.cholesky(Sigma)
+        right = np.linalg.cholesky(K)
+        return M + left.dot(np.random.normal(size=M.shape)).dot(right.T)
+    else:
+        left = np.linalg.cholesky(Sigma)
+        right = np.linalg.cholesky(Kinv)
+        return M + np.linalg.solve(right.T,left.dot(np.random.normal(size=M.shape)).T).T
 
 def sample_mniw(dof,lmbda,M,K):
     Sigma = sample_invwishart(lmbda,dof)
     return sample_mn(Sigma,M,K), Sigma
+
+def sample_mniw_kinv(dof,lmbda,M,Kinv):
+    Sigma = sample_invwishart(lmbda,dof)
+    return sample_mn(Sigma,M,Kinv=Kinv), Sigma
 
 def sample_pareto(x_m,alpha):
     return x_m + np.random.pareto(alpha)
