@@ -1,19 +1,23 @@
 from __future__ import division
 import numpy as np
-import line_profiler, sys, StringIO, inspect, os, functools, time, collections
+import sys, StringIO, inspect, os, functools, time, collections
 
 # use @line_profiled for a thin wrapper around line_profiler
 
-_prof = line_profiler.LineProfiler()
+try:
+    import line_profiler
+    _prof = line_profiler.LineProfiler()
 
-def line_profiled(func):
-    mod = inspect.getmodule(func)
-    if 'PROFILING' in os.environ or (hasattr(mod,'PROFILING') and mod.PROFILING):
-        return _prof(func)
-    return func
+    def line_profiled(func):
+        mod = inspect.getmodule(func)
+        if 'PROFILING' in os.environ or (hasattr(mod,'PROFILING') and mod.PROFILING):
+            return _prof(func)
+        return func
 
-def show_line_stats(stream=None):
-    _prof.print_stats(stream=stream)
+    def show_line_stats(stream=None):
+        _prof.print_stats(stream=stream)
+except ImportError:
+    pass
 
 # use @timed for really basic timing
 
