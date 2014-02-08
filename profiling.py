@@ -32,11 +32,14 @@ def show_timings(stream=None):
     if stream is None:
         stream = sys.stdout
     if len(_timings) > 0:
-        results = [(inspect.getsourcefile(f),f.__name__,np.mean(vals),np.std(vals))
-                for f, vals in _timings.iteritems()]
-        filename_lens = max(len(filename) for filename, _, _, _ in results)
-        name_lens = max(len(name) for _, name, _, _ in results)
-        fmt = '{:>%d} {:>%d} {:10.3} sec avg. (std. dev. {:10.3})' % (filename_lens, name_lens)
-        print >>stream, '\n'.join(fmt.format(filename,name,mean,std)
-                for filename, name, mean, std in sorted(results))
+        results = [(inspect.getsourcefile(f),f.__name__,
+            len(vals),np.sum(vals),np.mean(vals),np.std(vals))
+            for f, vals in _timings.iteritems()]
+        filename_lens = max(len(filename) for filename, _, _, _, _, _ in results)
+        name_lens = max(len(name) for _, name, _, _, _, _ in results)
 
+        fmt = '{:>%d} {:>%d} {:>10} {:>10} {:>10} {:>10}' % (filename_lens, name_lens)
+        print >>stream, fmt.format('file','name','ncalls','tottime','avg time','std dev')
+
+        fmt = '{:>%d} {:>%d} {:>10} {:>10.3} {:>10.3} {:>10.3}' % (filename_lens, name_lens)
+        print >>stream, '\n'.join(fmt.format(*tup) for tup in sorted(results))
