@@ -127,12 +127,12 @@ def sample_niw(mu,lmbda,kappa,nu):
 
     return mu, lmbda
 
-def sample_invwishart(lmbda,nu):
+def sample_invwishart(S,nu):
     # TODO make a version that returns the cholesky
     # TODO allow passing in chol/cholinv of matrix parameter lmbda
     # TODO lowmem! memoize! dchud (eigen?)
-    n = lmbda.shape[0]
-    chol = np.linalg.cholesky(lmbda)
+    n = S.shape[0]
+    chol = np.linalg.cholesky(S)
 
     if (nu <= 81+n) and (nu == np.round(nu)):
         x = np.random.randn(nu,n)
