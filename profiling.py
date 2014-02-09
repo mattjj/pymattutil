@@ -2,24 +2,7 @@ from __future__ import division
 import numpy as np
 import sys, StringIO, inspect, os, functools, time, collections
 
-# use @line_profiled for a thin wrapper around line_profiler
-
-try:
-    import line_profiler
-    _prof = line_profiler.LineProfiler()
-
-    def line_profiled(func):
-        mod = inspect.getmodule(func)
-        if 'PROFILING' in os.environ or (hasattr(mod,'PROFILING') and mod.PROFILING):
-            return _prof(func)
-        return func
-
-    def show_line_stats(stream=None):
-        _prof.print_stats(stream=stream)
-except ImportError:
-    pass
-
-# use @timed for really basic timing
+### use @timed for really basic timing
 
 _timings = collections.defaultdict(list)
 
@@ -47,3 +30,21 @@ def show_timings(stream=None):
 
         fmt = '{:>%d} {:>%d} {:>10} {:>10.3} {:>10.3} {:>10.3}' % (filename_lens, name_lens)
         print >>stream, '\n'.join(fmt.format(*tup) for tup in sorted(results))
+
+### use @line_profiled for a thin wrapper around line_profiler
+
+try:
+    import line_profiler
+    _prof = line_profiler.LineProfiler()
+
+    def line_profiled(func):
+        mod = inspect.getmodule(func)
+        if 'PROFILING' in os.environ or (hasattr(mod,'PROFILING') and mod.PROFILING):
+            return _prof(func)
+        return func
+
+    def show_line_stats(stream=None):
+        _prof.print_stats(stream=stream)
+except ImportError:
+    pass
+
