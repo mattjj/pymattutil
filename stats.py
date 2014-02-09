@@ -127,32 +127,32 @@ def sample_niw(mu,lmbda,kappa,nu):
 
     return mu, lmbda
 
-def sample_invwishart(lmbda,dof):
+def sample_invwishart(lmbda,nu):
     # TODO make a version that returns the cholesky
     # TODO allow passing in chol/cholinv of matrix parameter lmbda
     # TODO lowmem! memoize! dchud (eigen?)
     n = lmbda.shape[0]
     chol = np.linalg.cholesky(lmbda)
 
-    if (dof <= 81+n) and (dof == np.round(dof)):
-        x = np.random.randn(dof,n)
+    if (nu <= 81+n) and (nu == np.round(nu)):
+        x = np.random.randn(nu,n)
     else:
-        x = np.diag(np.sqrt(np.atleast_1d(stats.chi2.rvs(dof-np.arange(n)))))
+        x = np.diag(np.sqrt(np.atleast_1d(stats.chi2.rvs(nu-np.arange(n)))))
         x[np.triu_indices_from(x,1)] = np.random.randn(n*(n-1)/2)
     R = np.linalg.qr(x,'r')
     T = scipy.linalg.solve_triangular(R.T,chol.T,lower=True).T
     return np.dot(T,T.T)
 
-def sample_wishart(sigma, dof):
+def sample_wishart(sigma, nu):
     n = sigma.shape[0]
     chol = np.linalg.cholesky(sigma)
 
     # use matlab's heuristic for choosing between the two different sampling schemes
-    if (dof <= 81+n) and (dof == round(dof)):
+    if (nu <= 81+n) and (nu == round(nu)):
         # direct
-        X = np.dot(chol,np.random.normal(size=(n,dof)))
+        X = np.dot(chol,np.random.normal(size=(n,nu)))
     else:
-        A = np.diag(np.sqrt(np.random.chisquare(dof - np.arange(n))))
+        A = np.diag(np.sqrt(np.random.chisquare(nu - np.arange(n))))
         A[np.tri(n,k=-1,dtype=bool)] = np.random.normal(size=(n*(n-1)/2.))
         X = np.dot(chol,A)
 
@@ -176,12 +176,12 @@ def sample_mn(M,U=None,Uinv=None,V=None,Vinv=None):
 
     return M + G
 
-def sample_mniw(dof,lmbda,M,K):
-    Sigma = sample_invwishart(lmbda,dof)
+def sample_mniw(nu,lmbda,M,K):
+    Sigma = sample_invwishart(lmbda,nu)
     return sample_mn(M=M,U=Sigma,V=K), Sigma
 
-def sample_mniw_kinv(dof,lmbda,M,Kinv):
-    Sigma = sample_invwishart(lmbda,dof)
+def sample_mniw_kinv(nu,lmbda,M,Kinv):
+    Sigma = sample_invwishart(lmbda,nu)
     return sample_mn(M=M,U=Sigma,Vinv=Kinv), Sigma
 
 def sample_pareto(x_m,alpha):
