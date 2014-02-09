@@ -176,13 +176,13 @@ def sample_mn(M,U=None,Uinv=None,V=None,Vinv=None):
 
     return M + G
 
-def sample_mniw(nu,lmbda,M,K):
-    Sigma = sample_invwishart(lmbda,nu)
-    return sample_mn(M=M,U=Sigma,V=K), Sigma
-
-def sample_mniw_kinv(nu,lmbda,M,Kinv):
-    Sigma = sample_invwishart(lmbda,nu)
-    return sample_mn(M=M,U=Sigma,Vinv=Kinv), Sigma
+def sample_mniw(nu,S,M,K=None,Kinv=None):
+    assert (K is None) ^ (Kinv is None)
+    Sigma = sample_invwishart(S,nu)
+    if K is not None:
+        return sample_mn(M=M,U=Sigma,V=K), Sigma
+    else:
+        return sample_mn(M=M,U=Sigma,Vinv=Kinv), Sigma
 
 def sample_pareto(x_m,alpha):
     return x_m + np.random.pareto(alpha)
