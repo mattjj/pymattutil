@@ -1,10 +1,8 @@
+import Cython.Build
 from Cython.Build.Dependencies import *
 
-# NOTE: I use this version to allow the name directive in .pyx processing
-# it just changes three lines in create_extension_list; look for comment with
-# 'NOTE: matt'. when this file is imported, it clobbers the method in
-# Cython.Build.Dependencies. side effects!
-
+# NOTE: mostly a copy of cython's create_extension_list except for the lines
+# surrounded by "begin matt added" / "end matt added"
 def create_extension_list(patterns, exclude=[], ctx=None, aliases=None, quiet=False, exclude_failures=False):
     if not isinstance(patterns, list):
         patterns = [patterns]
@@ -73,10 +71,13 @@ def create_extension_list(patterns, exclude=[], ctx=None, aliases=None, quiet=Fa
                         # Always include everything from the template.
                         depends = list(set(template.depends).union(set(depends)))
                     kwds['depends'] = depends
-                # NOTE: matt added next three lines
+                # NOTE: begin matt added
                 if 'name' in kwds:
                     module_name = str(kwds['name'])
                     del kwds['name']
+                else:
+                    module_name = os.path.splitext(file)[0].replace('/','.')
+                # NOTE: end matt added
                 module_list.append(exn_type(
                         name=module_name,
                         sources=sources,
@@ -85,6 +86,12 @@ def create_extension_list(patterns, exclude=[], ctx=None, aliases=None, quiet=Fa
                 seen.add(name)
     return module_list
 
-import Cython.Build
-Cython.Build.Dependencies.create_extension_list = create_extension_list
+true_cythonize = Cython.Build.cythonize
+true_create_extension_list = Cython.Build.Dependencies.create_extension_list
+
+def cythonize(*args,**kwargs):
+    Cython.Build.Dependencies.create_extension_list = create_extension_list
+    out = true_cythonize(*args,**kwargs)
+    Cython.Build.Dependencies.create_extension_list = true_create_extension_list
+    return out
 
