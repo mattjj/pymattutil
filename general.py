@@ -42,6 +42,27 @@ def ibincount(counts):
     'returns an array a such that counts = np.bincount(a)'
     return np.repeat(np.arange(counts.shape[0]),counts)
 
+def cumsum(v,strict=False):
+    if not strict:
+        return np.cumsum(v,axis=0)
+    else:
+        out = np.zeros_like(v)
+        out[1:] = np.cumsum(v[:-1],axis=0)
+        return out
+
+def rcumsum(v,strict=False):
+    if not strict:
+        return np.cumsum(v[::-1],axis=0)[::-1]
+    else:
+        out = np.zeros_like(v)
+        out[:-1] = np.cumsum(v[-1:0:-1],axis=0)[::-1]
+        return out
+
+def delta_like(v,i):
+    out = np.zeros_like(v)
+    out[i] = 1
+    return out
+
 def deepcopy(obj):
     return copy.deepcopy(obj)
 
@@ -127,8 +148,52 @@ def _sieve(stream):
 def primes():
     return _sieve(itertools.count(2))
 
+def top_eigenvector(A,niter=1000,force_iteration=False):
+    '''
+    assuming the LEFT invariant subspace of A corresponding to the LEFT
+    eigenvalue of largest modulus has geometric multiplicity of 1 (trivial
+    Jordan block), returns the vector at the intersection of that eigenspace and
+    the simplex
+
+    A should probably be a ROW-stochastic matrix
+
+    probably uses power iteration
+    '''
+    n = A.shape[0]
+    np.seterr(invalid='raise',divide='raise')
+    if n <= 25 and not force_iteration:
+        x = np.repeat(1./n,n)
+        x = np.linalg.matrix_power(A.T,niter).dot(x)
+        x /= x.sum()
+        return x
+    else:
+        x1 = np.repeat(1./n,n)
+        x2 = x1.copy()
+        for itr in xrange(niter):
+            np.dot(A.T,x1,out=x2)
+            x2 /= x2.sum()
+            x1,x2 = x2,x1
+            if np.linalg.norm(x1-x2) < 1e-8:
+                break
+        return x1
+
+def engine_global_namespace(f):
+    # see IPython.parallel.util.interactive; it's copied here so as to avoid
+    # extra imports/dependences elsewhere, and to provide a slightly clearer
+    # name
+    f.__module__ = '__main__'
+    return f
+
 def block_view(a,block_shape):
     shape = (a.shape[0]/block_shape[0],a.shape[1]/block_shape[1]) + block_shape
     strides = (a.strides[0]*block_shape[0],a.strides[1]*block_shape[1]) + a.strides
     return ast(a,shape=shape,strides=strides)
+
+def count_transitions(stateseq,minlength=None):
+    if minlength is None:
+        minlength = stateseq.max() + 1
+    out = np.zeros((minlength,minlength),dtype=np.int32)
+    for a,b in itertools.izip(stateseq[:-1],stateseq[1:]):
+        out[a,b] += 1
+    return out
 
